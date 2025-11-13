@@ -1,0 +1,37 @@
+{
+  "HKQuantityTypeIdentifierDietaryWater": {
+    "count": 2,
+    "records": [
+      {
+        "type": "HKQuantityTypeIdentifierDietaryWater",
+        "sourceName": "Lifesum",
+        "sourceVersion": "15",
+        "unit": "mL",
+        "creationDate": "2023-04-18 18:29:09",
+        "startDate": "2023-04-17 18:29:08",
+        "endDate": "2023-04-17 18:29:08",
+        "value": "4000",
+        "metadata": {
+          "HKMetadataKeySyncVersion": "1681838949.01861",
+          "HKMetadataKeySyncIdentifier": "2023-04-17"
+        },
+        "device": NaN
+      },
+      {
+        "type": "HKQuantityTypeIdentifierDietaryWater",
+        "sourceName": "Lifesum",
+        "sourceVersion": "15",
+        "unit": "mL",
+        "creationDate": "2023-04-18 20:55:42",
+        "startDate": "2023-04-18 20:55:42",
+        "endDate": "2023-04-18 20:55:42",
+        "value": "2500",
+        "metadata": {
+          "HKMetadataKeySyncVersion": "1681847742.59866",
+          "HKMetadataKeySyncIdentifier": "2023-04-18"
+        },
+        "device": NaN
+      }
+    ]
+  }
+}
