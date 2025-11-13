@@ -6,31 +6,33 @@ Testing all tests
 just test
 ```
 
+---
+### Examples
 
-Example config-file:
-```YAML
-hosts:
-  local: {}
-  server1:
-    ip: 10.0.0.10
-    username: user
-    keyFile: ~/.ssh/<file>
+This is an example configuration for the executor, which controls the generation patterns
+```yaml
+distributions:
+  equal_distribution:
+    formula: "min + rand*(max-min)"
+    min: 800
+    max: 1000
+executor:
+  name: "simulation"
+  execution-pattern: "mixed"
+  duration: 100
+  steps:
+    - distribution: "equal_distribution"
+      duration: 100
 ```
 
-Example Single Payload (single publish):
-```JSON
-{
-  "type": "HKQuantityTypeIdentifierHeartRate",
-  "sourceName": "ESP32-Wecker",
-  "sourceVersion": "9.0",
-  "unit": "count/min",
-  "creationDate": "2022-09-17 16:05:23",
-  "startDate": "2022-09-17 16:01:03",
-  "endDate": "2022-09-17 16:01:03",
-  "value": "93",
-  "metadata": {
-    "HKMetadataKeyHeartRateMotionContext": "0"
-  },
-  "device": "Apple-Health-Deivice-1"
-}
+This is an example for the measurement-types which represent the blueprint for a measurement:
+```yaml
+measurement-types:
+  heart-rate:
+    type: "HKQuantityTypeIdentifierHeartRate"
+    source-name: "ESP32-Wecker"
+    source-version: "9.0"
+    min: 100
+    max: 200
+    unit: "count/min"
 ```
