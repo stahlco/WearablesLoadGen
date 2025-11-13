@@ -1,5 +1,9 @@
 package executer
 
-type Config struct {
-	LoadPatterns map[string]*Pattern
+type LoadPattern struct {
+	Distributions map[string]Distribution `yaml:"distributions,omitempty"`
+}
+
+type Distribution struct {
+	Formula string `yaml:"formula"`
 }

@@ -73,6 +73,8 @@ func validateConfig(cfg *Config) error {
 	return nil
 }
 
+// GenerateMockPayload generates a payload with a correlated value for every device, based on hashing.
+// It used the current time [time.DateTime] as the encoding.
 func GenerateMockPayload(measurementType *MeasurementBlueprint, deviceID string) (*Payload, error) {
 	if measurementType == nil {
 		return nil, fmt.Errorf("measurementType is nil")
