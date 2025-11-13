@@ -1,3 +1,0 @@
-distributions:
-  equal_distribution:
-    formula: "min + rand*(max-min)"

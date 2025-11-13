@@ -1,0 +1,18 @@
+distributions:
+  equal_distribution:
+    formula: "min + rand*(max-min)"
+    min: 800
+    max: 1000
+  high_peek:
+    formula: "min + (rand^2)*(max-min)"
+    min: 1500
+    max: 2000
+executor:
+  name: "daily_health_simulation"
+  execution-pattern: "mixed"
+  duration: 250
+  steps:
+    - distribution: "equal_distribution"
+      duration: 120
+    - distribution: "high_peek"
+      duration: 5
