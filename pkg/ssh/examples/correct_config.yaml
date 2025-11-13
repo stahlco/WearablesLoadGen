@@ -1,7 +1,0 @@
-hosts:
-  local: {}
-  server1:
-    ip: 1.0.0.1
-    username: user
-    port: 1000
-    key_file: ~/.ssh/id_rsa
