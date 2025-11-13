@@ -1,4 +1,4 @@
-package executer
+package executor
 
 type Distribution struct {
 	Formula string  `yaml:"formula,omitempty"`
