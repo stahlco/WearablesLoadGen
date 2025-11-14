@@ -131,3 +131,13 @@ func RunLinearLoadGeneration(config *executor.ExecutionConfig, handle func(value
 
 	return nil
 }
+
+func (c *Config) GetAllMeasurementBlueprints() []*MeasurementBlueprint {
+	var res []*MeasurementBlueprint
+
+	for _, blueprint := range c.MeasurementTypes {
+		res = append(res, &blueprint)
+	}
+
+	return res
+}

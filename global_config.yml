@@ -1,0 +1,30 @@
+kind: Handler
+mqtt:
+  topic: "wearables-raw"
+  broker: "tcp://localhost:1883"
+  device-count: 10000
+  plot-path: "./plot/"
+---
+kind: Executor
+distributions:
+  sinusoidal:
+    formula: "./scripts/sinusoidal.sh"
+    base: 2000
+    amp: 500
+executor:
+  name: "daily_health_simulation"
+  execution-pattern: "linear"
+  duration: 500
+  steps:
+    - distribution: "sinusoidal"
+      duration: 500
+---
+kind: Measurements
+measurement-types:
+  heart-rate:
+    type: "HKQuantityTypeIdentifierHeartRate"
+    source-name: "ESP32-Wecker"
+    source-version: "9.0"
+    min: 100
+    max: 200
+    unit: "count/min"
