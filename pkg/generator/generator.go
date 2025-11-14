@@ -1,9 +1,11 @@
 package generator
 
 import (
+	"WearablesLoadGen/pkg/executor"
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"log"
 	"math/rand"
 	"time"
 
@@ -101,4 +103,31 @@ func GenerateMockPayload(measurementType *MeasurementBlueprint, deviceID string)
 		Value:         fmt.Sprint(finalValue),
 		DeviceID:      deviceID,
 	}, nil
+}
+
+func RunLinearLoadGeneration(config *executor.ExecutionConfig, handle func(value int) error) error {
+
+	endExecutor := time.Now().Add(time.Duration(config.Executor.Duration) * time.Second)
+
+	for time.Now().Before(endExecutor) {
+		for _, step := range config.Executor.ExecutionSteps {
+			seconds := 0
+			d := config.Distributions[step.Distribution]
+
+			endStep := time.Now().Add(time.Duration(step.Duration) * time.Second)
+
+			for time.Now().Before(endStep) && time.Now().Before(endExecutor) {
+				seconds = seconds + 1
+				val := executor.EvaluateDistribution(d, seconds)
+				err := handle(val)
+				if err != nil {
+					log.Printf("handling the load generation failed with err: %v", err)
+					return err
+				}
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}
+
+	return nil
 }
