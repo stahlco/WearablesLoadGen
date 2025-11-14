@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseExecutionConfigYAML(t *testing.T) {
-	p := path.Join("config", "01_executor.yml")
+	p := path.Join("test", "01_executor.yml")
 	data, err := os.ReadFile(p)
 	if err != nil {
 		t.Fatalf("unexpected error while reading file %s: %v", p, err)

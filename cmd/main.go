@@ -18,6 +18,6 @@ func main() {
 	paho.WARN = log.New(os.Stdout, "[WARN]  ", 0)
 	paho.DEBUG = log.New(os.Stdout, "[DEBUG] ", 0)
 
-	// Config
+	// GeneratorConfig
 
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseYAML(t *testing.T) {
-	p := path.Join("config", "01_measurements.yml")
+	p := path.Join("test", "01_measurements.yml")
 	data, err := os.ReadFile(p)
 	if err != nil {
 		t.Fatalf("unexpected failure reading file, %v", err)
@@ -19,7 +19,7 @@ func TestParseYAML(t *testing.T) {
 	}
 
 	if len(cfg.MeasurementTypes) != 2 {
-		t.Fatalf("config has not the correct size of test")
+		t.Fatalf("test has not the correct size of test")
 	}
 
 	measurementType := cfg.MeasurementTypes["heart-rate"]

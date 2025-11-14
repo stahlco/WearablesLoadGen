@@ -12,7 +12,7 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-type Config struct {
+type GeneratorConfig struct {
 	MeasurementTypes map[string]MeasurementBlueprint `yaml:"measurement-types"`
 }
 
@@ -36,8 +36,8 @@ type MeasurementBlueprint struct {
 	Unit          string  `yaml:"unit,omitempty"`
 }
 
-func ParseYAML(data []byte) (*Config, error) {
-	var config Config
+func ParseYAML(data []byte) (*GeneratorConfig, error) {
+	var config GeneratorConfig
 
 	if err := yaml.UnmarshalWithOptions(data, &config, yaml.Strict()); err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func ParseYAML(data []byte) (*Config, error) {
 	return &config, nil
 }
 
-func validateConfig(cfg *Config) error {
+func validateConfig(cfg *GeneratorConfig) error {
 	if len(cfg.MeasurementTypes) == 0 {
 		return errors.New("no measurement types in configuration")
 	}
@@ -132,7 +132,7 @@ func RunLinearLoadGeneration(config *executor.ExecutionConfig, handle func(value
 	return nil
 }
 
-func (c *Config) GetAllMeasurementBlueprints() []*MeasurementBlueprint {
+func (c *GeneratorConfig) GetAllMeasurementBlueprints() []*MeasurementBlueprint {
 	var res []*MeasurementBlueprint
 
 	for _, blueprint := range c.MeasurementTypes {

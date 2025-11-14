@@ -3,4 +3,4 @@ handlers:
     topic: "wearables-raw"
     broker: "tcp://localhost:1883"
     device-count: 10000
-    plot-path: "./config/plot/"
+    plot-path: "./test/plot/"

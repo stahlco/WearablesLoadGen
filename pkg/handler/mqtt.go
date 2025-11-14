@@ -24,7 +24,7 @@ type Handler interface {
 	logToCSV(requests int) error
 }
 
-type Config struct {
+type HandlerConfig struct {
 	Handlers map[string]*MQTTHandler `yaml:"handlers,omitempty"`
 }
 
@@ -46,7 +46,7 @@ type MQTTHandler struct {
 
 func GenerateHandlerFromYAML(data []byte, measurementTypes []*generator.MeasurementBlueprint) (*MQTTHandler, error) {
 	var handler *MQTTHandler
-	var config Config
+	var config HandlerConfig
 
 	if err := yaml.UnmarshalWithOptions(data, &config, yaml.Strict()); err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func GenerateHandlerFromYAML(data []byte, measurementTypes []*generator.Measurem
 	}
 
 	if handler == nil {
-		return nil, fmt.Errorf("not able to find a supported type in the config: Support Types: [mqtt]")
+		return nil, fmt.Errorf("not able to find a supported type in the test: Support Types: [mqtt]")
 	}
 
 	if err := validateMQTTHandler(handler); err != nil {

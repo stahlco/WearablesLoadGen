@@ -8,14 +8,14 @@ import (
 )
 
 func TestGenerateHandlerFromYAML(t *testing.T) {
-	p := path.Join("config", "01_handler.yml")
+	p := path.Join("test", "01_handler.yml")
 	data, err := os.ReadFile(p)
 	if err != nil {
 		t.Fatalf("unexpected error reading from handler file")
 	}
 
 	// Measurements should work
-	measurementPath := path.Join("..", "generator", "config", "01_measurements.yml")
+	measurementPath := path.Join("..", "generator", "test", "01_measurements.yml")
 	measurementData, err := os.ReadFile(measurementPath)
 	if err != nil {
 		t.Fatalf("unexpected error reading from measurement file")
@@ -41,7 +41,7 @@ func TestGenerateHandlerFromYAML(t *testing.T) {
 		t.Fatalf("wrong deviceCount")
 	}
 
-	if handler.CsvFilePath != "./config/plot/plot.csv" {
+	if handler.CsvFilePath != "./test/plot/plot.csv" {
 		t.Fatalf("FilePath should be: \"./plot/plot.csv\", but is: \"%s\"", handler.CsvFilePath)
 	}
 }
