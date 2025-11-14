@@ -30,38 +30,38 @@ func TestParseExecutionConfigYAML(t *testing.T) {
 	if !ok {
 		t.Fatalf("missing 'equal_distribution' in distributions")
 	}
-	if equalDist.Formula != "min + rand*(max-min)" {
+	if equalDist.Formula != "./scripts/equal_distribution.sh" {
 		t.Fatalf("unexpected formula for equal_distribution: got %q", equalDist.Formula)
 	}
-	if equalDist.Min != 800 {
-		t.Fatalf("unexpected min for equal_distribution: got %f", equalDist.Min)
+	if equalDist.Base != 800 {
+		t.Fatalf("unexpected min for equal_distribution: got %f", equalDist.Base)
 	}
-	if equalDist.Max != 1000 {
-		t.Fatalf("unexpected max for equal_distribution: got %f", equalDist.Max)
+	if equalDist.Amp != 200 {
+		t.Fatalf("unexpected amp for equal_distribution: got %f", equalDist.Amp)
 	}
 
-	highPeek, ok := execCfg.Distributions["high_peek"]
+	highPeek, ok := execCfg.Distributions["sinusoidal"]
 	if !ok {
-		t.Fatalf("missing 'high_peek' in distributions")
+		t.Fatalf("missing 'sinusoidal' in distributions")
 	}
-	if highPeek.Formula != "min + (rand^2)*(max-min)" {
+	if highPeek.Formula != "./scripts/sinusoidal.sh" {
 		t.Fatalf("unexpected formula for high_peek: got %q", highPeek.Formula)
 	}
-	if highPeek.Min != 1500 {
-		t.Fatalf("unexpected min for high_peek: got %f", highPeek.Min)
+	if highPeek.Base != 2000 {
+		t.Fatalf("unexpected min for high_peek: got %f", highPeek.Base)
 	}
-	if highPeek.Max != 2000 {
-		t.Fatalf("unexpected max for high_peek: got %f", highPeek.Max)
+	if highPeek.Amp != 500 {
+		t.Fatalf("unexpected max for high_peek: got %f", highPeek.Amp)
 	}
 
 	executor := execCfg.Executor
 	if executor.Name != "daily_health_simulation" {
 		t.Fatalf("unexpected executor name: got %q", executor.Name)
 	}
-	if executor.ExecutionPattern != "mixed" {
+	if executor.ExecutionPattern != "linear" {
 		t.Fatalf("unexpected execution pattern: got %q", executor.ExecutionPattern)
 	}
-	if executor.Duration != 250 {
+	if executor.Duration != 500 {
 		t.Fatalf("unexpected executor duration: got %f", executor.Duration)
 	}
 
@@ -73,15 +73,29 @@ func TestParseExecutionConfigYAML(t *testing.T) {
 	if step1.Distribution != "equal_distribution" {
 		t.Fatalf("unexpected first step distribution: got %q", step1.Distribution)
 	}
-	if step1.Duration != 120 {
+	if step1.Duration != 100 {
 		t.Fatalf("unexpected first step duration: got %f", step1.Duration)
 	}
 
 	step2 := executor.ExecutionSteps[1]
-	if step2.Distribution != "high_peek" {
+	if step2.Distribution != "sinusoidal" {
 		t.Fatalf("unexpected second step distribution: got %q", step2.Distribution)
 	}
-	if step2.Duration != 5 {
+	if step2.Duration != 400 {
 		t.Fatalf("unexpected second step duration: got %f", step2.Duration)
 	}
+}
+
+func TestEvaluateDistribution(t *testing.T) {
+	dist := Distribution{
+		Formula: "./scripts/sinusoidal.sh",
+		Base:    2000,
+		Amp:     500,
+	}
+
+	res := EvaluateDistribution(dist, 100)
+	if res != 2321 {
+		t.Fatalf("wrong result should be 2349, but is: %d", res)
+	}
+
 }

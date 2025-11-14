@@ -1,18 +1,18 @@
 distributions:
   equal_distribution:
-    formula: "min + rand*(max-min)"
-    min: 800
-    max: 1000
-  high_peek:
-    formula: "min + (rand^2)*(max-min)"
-    min: 1500
-    max: 2000
+    formula: "./scripts/equal_distribution.sh"
+    base: 800
+    amp: 200
+  sinusoidal:
+    formula: "./scripts/sinusoidal.sh" # C = Baseline (min), A = Amplitude
+    base: 2000
+    amp: 500
 executor:
   name: "daily_health_simulation"
-  execution-pattern: "mixed"
-  duration: 250
+  execution-pattern: "linear"
+  duration: 500
   steps:
     - distribution: "equal_distribution"
-      duration: 120
-    - distribution: "high_peek"
-      duration: 5
+      duration: 100
+    - distribution: "sinusoidal"
+      duration: 400

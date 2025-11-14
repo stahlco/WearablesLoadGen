@@ -1,27 +1,32 @@
 package executor
 
 import (
+	"bytes"
 	"fmt"
+	"log"
+	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/goccy/go-yaml"
 )
-
-type Distribution struct {
-	Formula string  `yaml:"formula,omitempty"`
-	Min     float64 `yaml:"min"`
-	Max     float64 `yaml:"max"`
-}
-
-type ExecutorStep struct {
-	Distribution string  `yaml:"distribution,omitempty"`
-	Duration     float64 `yaml:"duration,omitempty"` // in sec
-}
 
 // ExecutionsPattern
 const (
 	Mixed  = "mixed"
 	Linear = "linear"
 )
+
+type Distribution struct {
+	Formula string  `yaml:"formula,omitempty"`
+	Base    float64 `yaml:"base"`
+	Amp     float64 `yaml:"amp"`
+}
+
+type ExecutorStep struct {
+	Distribution string  `yaml:"distribution,omitempty"`
+	Duration     float64 `yaml:"duration,omitempty"` // in sec
+}
 
 type ExecutorConfig struct {
 	Name             string         `yaml:"name,omitempty"`
@@ -59,7 +64,7 @@ func validateConfig(cfg *ExecutionConfig) error {
 	for alias, dist := range distributions {
 		err := validateDistributions(dist)
 		if err != nil {
-			return fmt.Errorf("validation of distribution %s failed, %v", alias, dist)
+			return fmt.Errorf("validation of distribution %s failed, %v: %v", alias, dist, err)
 		}
 	}
 
@@ -111,16 +116,48 @@ func validateExecutionStep(step ExecutorStep, distributions map[string]Distribut
 
 func validateDistributions(distribution Distribution) error {
 	if distribution.Formula == "" {
-		return fmt.Errorf("no formula provide")
+		return fmt.Errorf("no script provide")
 	}
-	if distribution.Min < 1 {
+	if distribution.Base < 1 {
 		return fmt.Errorf("invalid min value")
 	}
-	if distribution.Max <= distribution.Min {
-		return fmt.Errorf("max must be >= than Min")
+	if distribution.Amp >= distribution.Base {
+		return fmt.Errorf("amp must be <= than base, but is: Amp: %.2f, Base: %.2f", distribution.Amp, distribution.Base)
 	}
 
 	// Maybe do a formula check, but I might do that when I parse
 
 	return nil
+}
+
+func EvaluateDistribution(d Distribution, t int) int {
+	if d.Formula == "" {
+		log.Printf("No formula/script defined, returning base value (fallback is equal-dist)")
+		return int(d.Base)
+	}
+
+	cmd := exec.Command(
+		d.Formula,
+		fmt.Sprintf("--base=%d", int(d.Base)),
+		fmt.Sprintf("--amp=%d", int(d.Amp)),
+		fmt.Sprintf("--t=%d", t),
+	)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("Error running script '%s': %v", d.Formula, err)
+		return int(d.Base)
+	}
+
+	outputStr := strings.TrimSpace(out.String())
+	val, err := strconv.ParseFloat(outputStr, 64)
+	if err != nil {
+		log.Printf("Error parsing script output '%s': %v", outputStr, err)
+		return int(d.Base)
+	}
+
+	return int(val)
 }
