@@ -2,15 +2,12 @@ package handler
 
 import (
 	"WearablesLoadGen/pkg/generator"
-	"encoding/csv"
+	"WearablesLoadGen/pkg/plotter"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
-	"os"
-	"path"
 	"regexp"
-	"strconv"
 	"sync"
 	"time"
 
@@ -19,118 +16,100 @@ import (
 	"github.com/google/uuid"
 )
 
-type Handler interface {
-	GenerateLoad(requests int) error
-	logToCSV(requests int) error
+func init() {
+	RegisterHandler("mqtt", NewMQTTHandlerFromYAML)
 }
 
-type HandlerConfig struct {
-	Handlers map[string]*MQTTHandler `yaml:"handlers,omitempty"`
+type MQTTConfig struct {
+	Topic       string         `yaml:"topic,omitempty"`
+	Broker      string         `yaml:"broker,omitempty"`
+	DeviceCount int            `yaml:"device-count,omitempty"`
+	PlotterType plotter.Config `yaml:"plotter,omitempty"`
 }
 
 type MQTTHandler struct {
-	mqttClient paho.Client
-	// Those are used to create the messages
-	Topic            string `yaml:"topic,omitempty"`
-	BrokerURL        string `yaml:"broker,omitempty"`
-	DeviceCount      int    `yaml:"device-count,omitempty"`
+	Base
+	mqttClient       paho.Client
+	conf             MQTTConfig
 	measurementTypes []*generator.MeasurementBlueprint
-
-	// For Plotting
-	CsvFilePath string `yaml:"plot-path,omitempty"`
-	csvFile     *os.File
-	csvWriter   *csv.Writer
-	callCount   int
-	mu          sync.Mutex
 }
 
-func GenerateHandlerFromYAML(data []byte, measurementTypes []*generator.MeasurementBlueprint) (*MQTTHandler, error) {
-	var handler *MQTTHandler
-	var config HandlerConfig
+// NewMQTTHandlerFromYAML will be used by the Factory to generate a MQTTHandler
+func NewMQTTHandlerFromYAML(data []byte, measurementTypes []*generator.MeasurementBlueprint) (Handler, error) {
+	// We need to create BaseHandler
+	var config MQTTConfig
 
 	if err := yaml.UnmarshalWithOptions(data, &config, yaml.Strict()); err != nil {
 		return nil, err
 	}
 
-	for alias, h := range config.Handlers {
-		if alias == "mqtt" {
-			handler = h
-		}
-	}
+	var handler MQTTHandler
 
-	if handler == nil {
-		return nil, fmt.Errorf("not able to find a supported type in the test: Support Types: [mqtt]")
-	}
-
-	if err := validateMQTTHandler(handler); err != nil {
-		return nil, err
-	}
-
-	u := uuid.New().String() //clientID
-
+	handler.conf = config
 	handler.measurementTypes = measurementTypes
 
+	return &handler, nil
+}
+
+func (h *MQTTHandler) Init() error {
+	// validate the Config
+	if err := validateMQTTConfig(&h.conf); err != nil {
+		log.Printf("validating mqtt config failed with error: %v", err)
+		return err
+	}
+
+	// init mqtt client
+	u := uuid.New().String()
+
 	opts := paho.NewClientOptions()
-	opts.AddBroker(handler.BrokerURL)
+	opts.AddBroker(h.conf.Broker)
 	opts.SetClientID(u)
 	opts.SetCleanSession(true)
 
-	client := paho.NewClient(opts)
+	h.mqttClient = paho.NewClient(opts)
 
-	handler.mqttClient = client
-
-	file, err := os.OpenFile(handler.CsvFilePath, os.O_APPEND|os.O_WRONLY, 0644)
+	// init base -> and plotter
+	p, err := plotter.NewPlotterFromConfig(&h.conf.PlotterType)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	handler.csvFile = file
-	handler.csvWriter = csv.NewWriter(file)
-	handler.callCount = 0
-
-	return handler, nil
-}
-
-func validateMQTTHandler(handler *MQTTHandler) error {
-	// we then already have: topic, broker, device-count, plot-path
-	if handler.Topic == "" {
-		return fmt.Errorf("must provide a topic for the handler")
-	}
-
-	if handler.BrokerURL == "" {
-		return fmt.Errorf("must provide a broker URL")
-	}
-
-	pattern := `^(tcp|ssl|ws|wss)://[a-zA-Z0-9.-]+:1883$`
-	re := regexp.MustCompile(pattern)
-	if !re.MatchString(handler.BrokerURL) {
-		return fmt.Errorf("broker URL must match: %s", pattern)
-	}
-
-	if handler.CsvFilePath == "" {
-		return fmt.Errorf("plot file path must at least provide a directory")
-	}
-
-	dir, file := path.Split(handler.CsvFilePath)
-	if file == "" {
-		handler.CsvFilePath = dir + "plot.csv"
-	}
+	h.Plotter = p
 
 	return nil
 }
 
+// GenerateLoad gets only invoked once a second
 func (h *MQTTHandler) GenerateLoad(requests int) error {
 	wg := sync.WaitGroup{}
 	wg.Add(requests)
 	errChan := make(chan error, requests)
 
+	// Idk if correct, but I do it like that
+	err := h.Plotter.PlotLoadOverSeconds(time.Now(), requests)
+	if err != nil {
+		return err
+	}
+
+	// Plotting the Outbound Throughput
+	sizeChan := make(chan int, requests) // track bytes sent
+
+	go func() {
+		for bytes := range sizeChan {
+			err := h.Plotter.PlotOutboundThroughput(time.Now(), bytes)
+			if err != nil {
+				return
+			}
+		}
+	}()
+
 	for i := 0; i < requests; i++ {
 		go func() {
 			defer wg.Done()
 
-			measurementType := h.measurementTypes[rand.Intn(len(h.measurementTypes))] // one of the existing
-			device_ID := fmt.Sprintf("test-device-%d", rand.Intn(h.DeviceCount))
-			payload, err := generator.GenerateMockPayload(measurementType, device_ID)
+			// Generating a proper payload
+			measurementType := h.measurementTypes[rand.Intn(len(h.measurementTypes))]
+			deviceId := fmt.Sprintf("test-device-%d", rand.Intn(h.conf.DeviceCount))
+			payload, err := generator.GenerateMockPayload(measurementType, deviceId)
 			if err != nil {
 				log.Printf("not able to generate mock payload, aborting: %v", err)
 				errChan <- err
@@ -145,40 +124,57 @@ func (h *MQTTHandler) GenerateLoad(requests int) error {
 				return
 			}
 
-			token := h.mqttClient.Publish(h.Topic, 0, false, data)
-			token.Wait()
+			sizeChan <- len(data)
+
+			token := h.mqttClient.Publish(h.conf.Topic, 0, false, data)
 			if token.Error() != nil {
 				log.Printf("error publishing, skipping: %v", token.Error())
 			}
 
 			errChan <- nil
 		}()
+
 	}
 
 	wg.Wait()
 	close(errChan)
+	close(sizeChan)
 
+	var allErrors []error
 	for err := range errChan {
 		if err != nil {
-			return err
+			allErrors = append(allErrors, err)
 		}
+	}
+	if len(allErrors) > 0 {
+		return fmt.Errorf("encountered %d errors, first: %v", len(allErrors), allErrors[0])
 	}
 
 	return nil
 }
 
-func (h *MQTTHandler) logToCSV(requests int) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+func validateMQTTConfig(cfg *MQTTConfig) error {
 
-	h.callCount++
-	row := []string{
-		strconv.Itoa(h.callCount),
-		strconv.Itoa(requests),
-		time.Now().Format(time.RFC3339),
+	if cfg.Topic == "" {
+		return fmt.Errorf("must provide a topic for the handler")
 	}
 
-	if err := h.csvWriter.Write(row); err != nil {
+	if cfg.Broker == "" {
+		return fmt.Errorf("must provide a broker URL")
+	}
+
+	pattern := `^(tcp|ssl|ws|wss)://[a-zA-Z0-9.-]+:1883$`
+	re := regexp.MustCompile(pattern)
+	if !re.MatchString(cfg.Broker) {
+		return fmt.Errorf("broker URL must match: %s", pattern)
+	}
+
+	if cfg.DeviceCount <= 0 {
+		return fmt.Errorf("device count must be > 0, is: %d", cfg.DeviceCount)
+	}
+
+	// validate plotter config
+	if err := plotter.ValidatePlotter(&cfg.PlotterType); err != nil {
 		return err
 	}
 

@@ -1,4 +1,4 @@
-This is a simple Load-Generator which mocks an mqtt-client that publishes Health Data.
+This is a simple protocol-agnostic Load-Generator which mocks a client that publishes Health Data.
 
 ---
 ### Prerequisites
@@ -24,7 +24,7 @@ In section [Examples](#examples) the configuration and the extensibility will be
 
 ##### Generator
 The Generator uses the configuration `kind: Generator` in the Config to generate Messages of n distinct types. The Generator is optimized to create "normal" measurements and no anomalies.
-To achieve this the Generator uses the hash of the a number [0;10.000] which refers the amount of different device IDs. This is done to have correlated measurement and have a clean graph on the dashboard.
+To achieve this the Generator uses the hash of the a number [0;`device_id`] which refers the amount of different device IDs. This is done to have correlated measurement and have a clean graph on the dashboard.
 
 ##### Executor
 The Executor uses shell scripts to calculate how many requests are send in a second. 
@@ -37,6 +37,13 @@ The Handler handles the connection to the server and publishes the messages usin
 ---
 ### Features
 tba...
+
+---
+### Future Features
+- anomaly measurements (=> abnormal spikes in user patterns -> correlated)
+- configure batch sending (60 KB, 500 KB, 2MB large Messages)
+- Add HTTP - Generator
+- Displaying Plot of the Load-Pattern to analyse behaviors better (using pandas)
 
 ---
 ### Examples

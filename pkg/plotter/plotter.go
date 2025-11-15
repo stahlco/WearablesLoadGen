@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 )
 
 type Plotter interface {
-	PlotLoadOverTime(t time.Time, load int) error
+	PlotLoadOverSeconds(t time.Time, load int) error
 	PlotOutboundThroughput(t time.Time, bytes int) error
 	PlotMessageSizePerMessage(message int, size int) error
 	PlotMessageSizeDistribution(bucket string, count int) error
@@ -44,26 +45,38 @@ func NewPlotterFromConfig(cfg *Config) (Plotter, error) {
 	}
 }
 
-func (c CsvPlotter) PlotLoadOverTime(t time.Time, load int) error {
-	return nil
+func (c CsvPlotter) PlotLoadOverSecond(t time.Time, load int) error {
+	return c.writeRow("load_over_time", []string{t.String(), strconv.Itoa(load)})
 }
 
+// PlotOutboundThroughput writes to outbound throughput per second
 func (c CsvPlotter) PlotOutboundThroughput(t time.Time, bytes int) error {
-	//TODO implement me
-	panic("implement me")
+	return c.writeRow("outbound_throughput", []string{t.String(), strconv.Itoa(bytes)})
 }
 
+// TODO Refactor idk if they are correct like this, but okay
 func (c CsvPlotter) PlotMessageSizePerMessage(message int, size int) error {
-	//TODO implement me
-	panic("implement me")
+	panic("implement me...")
 }
 
 func (c CsvPlotter) PlotMessageSizeDistribution(bucket string, count int) error {
-	//TODO implement me
-	panic("implement me")
+	panic("implement me...")
 }
 
 func (c CsvPlotter) writeRow(plotType string, row []string) error {
+	var w *csv.Writer
+
+	if writer, ok := c.csvWriters[plotType]; !ok {
+		return fmt.Errorf("type: %s not found in writers", plotType)
+	} else {
+		w = writer
+	}
+
+	err := w.Write(row)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -83,8 +96,6 @@ func newCsvPlotter(cfg *Config) (Plotter, error) {
 	// Create files for all different plots that will be created
 	// <plotter-id>_<plot-type>.csv
 	plotter.csvWriters = plotter.createPlotWriters()
-
-	// Create csv-Writer
 
 	return nil, nil
 }

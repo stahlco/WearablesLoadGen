@@ -1,6 +1,9 @@
-handlers:
-  mqtt:
+handler:
+  type: mqtt
+  config:
     topic: "wearables-raw"
     broker: "tcp://localhost:1883"
     device-count: 10000
-    plot-path: "./test/plot/"
+    plotter:
+      type: csv
+      path: ./plots/
