@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func SplitYAML(data []byte) (*executor.ExecutionConfig, *generator.GeneratorConfig, *handler.MQTTHandler2, error) {
+func SplitYAML(data []byte) (*executor.ExecutionConfig, *generator.GeneratorConfig, handler.Handler, error) {
 
 	docs := bytes.Split(data, []byte("\n---"))
 
@@ -68,7 +68,7 @@ func SplitYAML(data []byte) (*executor.ExecutionConfig, *generator.GeneratorConf
 		return nil, nil, nil, err
 	}
 
-	handlerConfig, err := handler.GenerateMQTTHandlerFromYAML(handlerDoc, genConfig.GetAllMeasurementBlueprints())
+	handlerConfig, err := handler.GenerateHandlerFromYAML(handlerDoc, genConfig.GetAllMeasurementBlueprints())
 	if err != nil {
 		log.Printf("failed to parse execution test")
 		return nil, nil, nil, err
